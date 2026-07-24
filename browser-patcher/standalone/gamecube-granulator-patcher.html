@@ -1,0 +1,1297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>GameCube Ambient Granulator Bank Patcher</title>
+  <style>:root {
+  color-scheme: dark;
+  --black: #000;
+  --white: #fff;
+  --grey: #8b8b8b;
+  --line: #333;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--black);
+  color: var(--white);
+}
+
+body, button, input {
+  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+button, input { font: inherit; border-radius: 0; }
+
+button {
+  border: 1px solid var(--white);
+  background: var(--black);
+  color: var(--white);
+  padding: .5rem .75rem;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled), button:focus-visible {
+  background: var(--white);
+  color: var(--black);
+  outline: none;
+}
+
+button:disabled { opacity: .28; cursor: default; }
+
+input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #777;
+  background: var(--black);
+  color: var(--white);
+  padding: .45rem .5rem;
+}
+
+input:focus { border-color: var(--white); outline: none; }
+input:disabled { opacity: .35; }
+
+.app-shell {
+  width: min(1500px, calc(100% - 2rem));
+  margin: 1.5rem auto 4rem;
+}
+
+.masthead {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--white);
+}
+
+h1, h2, p { margin: 0; }
+h1 { font-size: 1.35rem; letter-spacing: .02em; }
+h2 { font-size: .95rem; letter-spacing: .05em; }
+
+.masthead p, .hint, footer, .empty {
+  color: var(--grey);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.masthead p { margin-top: .3rem; }
+.format-stamp { color: var(--grey); font-size: .82rem; white-space: nowrap; }
+
+.workflow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: .8rem;
+  margin-top: 1rem;
+}
+
+.drop-zone {
+  min-height: 78px;
+  display: grid;
+  place-content: center;
+  gap: .25rem;
+  border: 1px dashed #777;
+  color: var(--grey);
+  text-align: center;
+  cursor: pointer;
+  padding: .8rem;
+}
+
+.drop-zone input { display: none; }
+.drop-zone b { color: inherit; font-size: .86rem; font-weight: normal; }
+.drop-zone span { font-size: .75rem; }
+.drop-zone:hover, .drop-zone.armed { border-color: var(--white); color: var(--white); }
+.drop-zone.disabled { opacity: .3; cursor: default; }
+.drop-zone.disabled:hover { border-color: #777; color: var(--grey); }
+
+.export-button {
+  min-width: 230px;
+  background: var(--white);
+  color: var(--black);
+}
+
+.export-button:hover:not(:disabled) { background: var(--black); color: var(--white); }
+.export-button.secondary { background: var(--black); color: var(--white); }
+.export-button.secondary:hover:not(:disabled) { background: var(--white); color: var(--black); }
+
+.status { min-height: 2rem; padding: .65rem 0; font-size: .84rem; }
+.status.error { background: var(--white); color: var(--black); padding: .45rem .6rem; margin: .3rem 0; }
+.status.success { color: var(--white); }
+
+.budget-panel { border: 1px solid var(--white); padding: .75rem; margin-bottom: 1rem; }
+.budget-heading { display: flex; justify-content: space-between; gap: 1rem; font-size: .8rem; margin-bottom: .5rem; }
+.budget-heading span { color: var(--grey); }
+.budget-bar { height: 9px; border: 1px solid #777; background: #191919; }
+.budget-bar > div { height: 100%; background: var(--white); }
+.budget-bar > div.over { background: repeating-linear-gradient(45deg, #fff, #fff 4px, #000 4px, #000 8px); }
+.dol-capacity { margin-top: .55rem; color: var(--grey); font-size: .72rem; }
+.dol-capacity.over { color: var(--white); text-decoration: underline; text-decoration-style: double; }
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(330px, .72fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.panel { border: 1px solid var(--white); background: var(--black); padding: 1rem; }
+.panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .8rem; }
+.panel-heading > span { color: var(--grey); }
+.sample-pool { position: sticky; top: 1rem; }
+.pool-list { max-height: 570px; overflow-y: auto; border-top: 1px solid var(--line); }
+
+.pool-row {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) 4rem;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--grey);
+  padding: .52rem .3rem;
+  text-align: left;
+}
+
+.pool-row:hover, .pool-row.selected { background: var(--white); color: var(--black); }
+.pool-name { overflow: hidden; color: inherit; white-space: nowrap; text-overflow: ellipsis; }
+.pool-actions, .transport { display: flex; gap: .45rem; flex-wrap: wrap; }
+.pool-actions { padding-top: .8rem; }
+.empty { padding: 1rem .3rem; }
+
+.waveform {
+  display: block;
+  width: 100%;
+  height: 340px;
+  border: 1px solid var(--white);
+  background: var(--black);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.hint { margin-top: .55rem; }
+.editor-grid { display: grid; grid-template-columns: 2fr .7fr .9fr .9fr; gap: .8rem; margin-top: 1rem; }
+
+label { position: relative; display: grid; gap: .35rem; color: var(--grey); font-size: .78rem; }
+label .unit { position: absolute; right: .5rem; bottom: .47rem; color: var(--grey); pointer-events: none; }
+label:has(.unit) input { padding-right: 2.7rem; }
+
+.sample-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+}
+
+.sample-stats div { min-width: 0; padding: .7rem; border-right: 1px solid var(--line); }
+.sample-stats div:last-child { border-right: 0; }
+.sample-stats span { display: block; margin-bottom: .25rem; color: var(--grey); font-size: .7rem; }
+.sample-stats b { display: block; overflow: hidden; font-size: .82rem; white-space: nowrap; text-overflow: ellipsis; }
+
+footer { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+code { color: var(--white); }
+
+@media (max-width: 1180px) {
+  .workflow { grid-template-columns: 1fr 1fr; }
+  .export-button { min-height: 54px; }
+  .workspace { grid-template-columns: 1fr; }
+  .sample-pool { position: static; }
+  .pool-list { max-height: 330px; }
+  .editor-grid, .sample-stats { grid-template-columns: 1fr 1fr; }
+  .sample-stats div:nth-child(2) { border-right: 0; }
+  .sample-stats div { border-bottom: 1px solid var(--line); }
+}
+
+@media (max-width: 620px) {
+  .app-shell { width: min(100% - 1rem, 1500px); margin-top: .7rem; }
+  .masthead { align-items: start; flex-direction: column; }
+  .workflow, .editor-grid, .sample-stats { grid-template-columns: 1fr; }
+  .waveform { height: 260px; }
+  .sample-stats div { border-right: 0; }
+}
+</style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="masthead">
+      <div>
+        <h1>GAMECUBE AMBIENT GRANULATOR PATCHER</h1>
+        <p>standalone · offline · audio stays on this device</p>
+      </div>
+      <div class="format-stamp">PCM16 · MONO · 48000 HZ</div>
+    </header>
+
+    <section class="workflow" aria-label="Application patching workflow">
+      <label class="drop-zone" id="application-drop">
+        <input id="application-input" type="file" accept=".dol,.bin,application/octet-stream">
+        <b>OPEN DOL / BANK</b>
+        <span>edit an existing embedded or external bank</span>
+      </label>
+      <label class="drop-zone" id="audio-drop">
+        <input id="audio-input" type="file" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.m4a,.ogg" multiple>
+        <b>ADD AUDIO</b>
+        <span>start a new bank or add to the open one</span>
+      </label>
+      <button class="export-button" id="bank-export-button" disabled>DOWNLOAD SAMPLE_BANK.BIN</button>
+      <button class="export-button secondary" id="dol-export-button" disabled>DOWNLOAD PATCHED DOL</button>
+    </section>
+
+    <div class="status" id="status" role="status">Add WAV files, open sample_bank.bin, or open the GameCube DOL.</div>
+
+    <section class="budget-panel" aria-label="Bank capacity">
+      <div class="budget-heading">
+        <b>BANK CAPACITY</b>
+        <span id="budget-label">4.1 KB / 16.00 MB · 0/64 slots</span>
+      </div>
+      <div class="budget-bar"><div id="budget-fill"></div></div>
+      <div class="dol-capacity" id="dol-capacity">DOL SLOT · OPEN A DOL FOR PATCHED-DOL EXPORT</div>
+    </section>
+
+    <div class="workspace">
+      <aside class="sample-pool panel">
+        <div class="panel-heading"><h2>SAMPLE POOL</h2><span id="sample-count">0</span></div>
+        <div class="pool-list" id="pool-list"><p class="empty">No samples in the bank.</p></div>
+        <div class="pool-actions">
+          <button id="move-up" disabled>MOVE UP</button>
+          <button id="move-down" disabled>MOVE DOWN</button>
+          <button id="remove" disabled>REMOVE</button>
+          <button id="clear-all" disabled>CLEAR ALL</button>
+        </div>
+      </aside>
+
+      <section class="editor panel">
+        <div class="panel-heading">
+          <h2>SAMPLE EDITOR</h2>
+          <div class="transport">
+            <button id="play" disabled>PLAY</button>
+            <button id="stop" disabled>STOP</button>
+          </div>
+        </div>
+        <canvas id="waveform" class="waveform" width="1200" height="300"
+          aria-label="Waveform with draggable trim boundaries"></canvas>
+        <p class="hint">Drag the IN and OUT boundaries. Preview and export use the white region.</p>
+
+        <div class="editor-grid">
+          <label>NAME<input id="sample-name" maxlength="31" disabled></label>
+          <label>GAIN<input id="sample-gain" type="number" min="-48" max="18" step="0.5" value="0" disabled><span class="unit">DB</span></label>
+          <label>TRIM IN<input id="trim-start" type="number" min="0" step="1" value="0" disabled><span class="unit">MS</span></label>
+          <label>TRIM OUT<input id="trim-end" type="number" min="0" step="1" value="0" disabled><span class="unit">MS</span></label>
+        </div>
+
+        <div class="sample-stats">
+          <div><span>SOURCE</span><b id="source-rate">—</b></div>
+          <div><span>PREPARED</span><b id="prepared-duration">—</b></div>
+          <div><span>PCM SIZE</span><b id="pcm-size">—</b></div>
+          <div><span>ORIGIN</span><b id="sample-origin">—</b></div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      Recommended: copy <code>sample_bank.bin</code> to
+      <code>/gamecube-ambient-granulator/</code> on the SD2SP2 card beside the
+      standard DOL. A patched DOL is useful for Dolphin or a self-contained
+      build; remove the external bank when testing its embedded samples.
+    </footer>
+  </main>
+  <script type="module">export const BANK_MAGIC = "NDSGRN01";
+export const BANK_VERSION = 1;
+export const LEGACY_RATE = 16384;
+export const TARGET_RATE = 48000;
+export const MAX_ENTRIES = 64;
+export const MAX_BANK_BYTES = 16 * 1024 * 1024;
+export const ENTRY_SIZE = 64;
+export const ENTRIES_OFFSET = 64;
+export const DATA_OFFSET = ENTRIES_OFFSET + ENTRY_SIZE * MAX_ENTRIES;
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder("utf-8");
+let fallbackId = 0;
+const SUPPORTED_BANK_RATES = new Set([LEGACY_RATE, TARGET_RATE]);
+const RESAMPLE_RADIUS = 16;
+const RESAMPLE_PHASES = 1024;
+const resampleKernelCache = new Map();
+
+function createId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  fallbackId += 1;
+  return `sample-${Date.now()}-${fallbackId}`;
+}
+
+function readU32(bytes, offset) {
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    .getUint32(offset, true);
+}
+
+function writeU32(view, offset, value) {
+  view.setUint32(offset, value >>> 0, true);
+}
+
+function readName(bytes, offset) {
+  let end = offset;
+  while (end < offset + 32 && bytes[end] !== 0) end += 1;
+  return decoder.decode(bytes.subarray(offset, end));
+}
+
+function safeName(name) {
+  return String(name).replace(/[^\x20-\x7e]/g, " ").trim().slice(0, 31)
+    || "UNTITLED";
+}
+
+export function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+export function makeSample({ name, sourceRate, data, origin = "LOCAL AUDIO" }) {
+  if (!(data instanceof Float32Array) || data.length === 0)
+    throw new Error("Decoded audio contains no samples.");
+  if (!Number.isFinite(sourceRate) || sourceRate <= 0)
+    throw new Error("Decoded audio has an invalid sample rate.");
+  return {
+    id: createId(),
+    name: safeName(name),
+    sourceRate,
+    data,
+    trimStart: 0,
+    trimEnd: data.length,
+    gainDb: 0,
+    origin,
+  };
+}
+
+function resampleKernel(sourceRate, targetRate) {
+  const key = `${sourceRate}:${targetRate}`;
+  if (resampleKernelCache.has(key)) return resampleKernelCache.get(key);
+  const taps = RESAMPLE_RADIUS * 2;
+  const cutoff = Math.min(1, targetRate / sourceRate);
+  const table = Array.from({ length: RESAMPLE_PHASES }, (_, phase) => {
+    const fraction = phase / (RESAMPLE_PHASES - 1);
+    const weights = new Float64Array(taps);
+    let total = 0;
+    for (let tap = 0; tap < taps; tap += 1) {
+      const distance = tap - (RESAMPLE_RADIUS - 1) - fraction;
+      const normalized = distance / RESAMPLE_RADIUS;
+      const window = Math.abs(normalized) < 1
+        ? .42 + .5 * Math.cos(Math.PI * normalized)
+          + .08 * Math.cos(2 * Math.PI * normalized) : 0;
+      const argument = Math.PI * distance * cutoff;
+      const sinc = argument === 0 ? 1 : Math.sin(argument) / argument;
+      weights[tap] = cutoff * sinc * window;
+      total += weights[tap];
+    }
+    for (let tap = 0; tap < taps; tap += 1) weights[tap] /= total;
+    return weights;
+  });
+  resampleKernelCache.set(key, table);
+  return table;
+}
+
+export function resampleSample(sample, targetRate = TARGET_RATE) {
+  const start = Math.max(0, Math.min(sample.data.length - 1,
+    Math.round(sample.trimStart)));
+  const end = Math.max(start + 1, Math.min(sample.data.length,
+    Math.round(sample.trimEnd)));
+  const inputLength = end - start;
+  const outputLength = Math.max(1,
+    Math.round(inputLength * targetRate / sample.sourceRate));
+  const output = new Float32Array(outputLength);
+  const gain = Math.pow(10, sample.gainDb / 20);
+  if (sample.sourceRate === targetRate) {
+    for (let index = 0; index < outputLength; index += 1)
+      output[index] = Math.max(-1, Math.min(1, sample.data[start + index]
+        * gain));
+    return output;
+  }
+
+  const ratio = sample.sourceRate / targetRate;
+  const kernels = resampleKernel(sample.sourceRate, targetRate);
+  for (let index = 0; index < outputLength; index += 1) {
+    const position = Math.min(inputLength - 1, index * ratio);
+    const center = Math.floor(position);
+    const phase = Math.min(RESAMPLE_PHASES - 1,
+      Math.round((position - center) * (RESAMPLE_PHASES - 1)));
+    const weights = kernels[phase];
+    let value = 0;
+    let usedWeight = 0;
+    for (let tap = 0; tap < weights.length; tap += 1) {
+      const sourceIndex = center + tap - (RESAMPLE_RADIUS - 1);
+      if (sourceIndex < 0 || sourceIndex >= inputLength) continue;
+      value += sample.data[start + sourceIndex] * weights[tap];
+      usedWeight += weights[tap];
+    }
+    if (Math.abs(usedWeight) > 1e-12) value /= usedWeight;
+    output[index] = Math.max(-1, Math.min(1, value * gain));
+  }
+  return output;
+}
+
+export function estimatedBankBytes(samples, targetRate = TARGET_RATE) {
+  let cursor = DATA_OFFSET;
+  for (const sample of samples) {
+    cursor = (cursor + 31) & ~31;
+    const inputLength = Math.max(1,
+      Math.round(sample.trimEnd) - Math.round(sample.trimStart));
+    cursor += Math.max(1,
+      Math.round(inputLength * targetRate / sample.sourceRate)) * 2;
+  }
+  return cursor;
+}
+
+function pcmBytes(data) {
+  const bytes = new Uint8Array(data.length * 2);
+  const view = new DataView(bytes.buffer);
+  for (let index = 0; index < data.length; index += 1) {
+    const value = Math.max(-1, Math.min(1, data[index]));
+    view.setInt16(index * 2,
+      Math.round(value < 0 ? value * 32768 : value * 32767), true);
+  }
+  return bytes;
+}
+
+export function buildBank(samples, maximumBytes = MAX_BANK_BYTES,
+                          targetRate = TARGET_RATE) {
+  if (!samples.length) throw new Error("Add at least one sample.");
+  if (samples.length > MAX_ENTRIES)
+    throw new Error(`A bank can contain at most ${MAX_ENTRIES} samples.`);
+
+  if (!SUPPORTED_BANK_RATES.has(targetRate))
+    throw new Error(`Unsupported bank sample rate ${targetRate}.`);
+  const prepared = samples.map(sample => pcmBytes(
+    resampleSample(sample, targetRate)));
+  const offsets = [];
+  let cursor = DATA_OFFSET;
+  for (const bytes of prepared) {
+    cursor = (cursor + 31) & ~31;
+    offsets.push(cursor);
+    cursor += bytes.length;
+  }
+  if (cursor > maximumBytes) {
+    throw new Error(`Bank exceeds the ${formatBytes(maximumBytes)} limit by ${formatBytes(cursor - maximumBytes)}.`);
+  }
+
+  const output = new Uint8Array(cursor);
+  const view = new DataView(output.buffer);
+  output.set(encoder.encode(BANK_MAGIC), 0);
+  writeU32(view, 8, BANK_VERSION);
+  writeU32(view, 12, output.length);
+  writeU32(view, 16, samples.length);
+  writeU32(view, 20, output.length);
+  writeU32(view, 24, targetRate);
+  writeU32(view, 28, ENTRY_SIZE);
+  writeU32(view, 32, MAX_ENTRIES);
+  writeU32(view, 36, DATA_OFFSET);
+
+  prepared.forEach((bytes, index) => {
+    const entry = ENTRIES_OFFSET + index * ENTRY_SIZE;
+    output.set(encoder.encode(safeName(samples[index].name)), entry);
+    writeU32(view, entry + 32, offsets[index]);
+    writeU32(view, entry + 36, bytes.length);
+    writeU32(view, entry + 40, crc32(bytes));
+    output.set(bytes, offsets[index]);
+  });
+  return output;
+}
+
+export function decodeBank(input) {
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  if (bytes.length < DATA_OFFSET)
+    throw new Error("File is too small to be an NDSGRN01 sample bank.");
+  if (decoder.decode(bytes.subarray(0, 8)) !== BANK_MAGIC)
+    throw new Error("No NDSGRN01 sample-bank signature was found.");
+  const version = readU32(bytes, 8);
+  const capacity = readU32(bytes, 12);
+  const count = readU32(bytes, 16);
+  const used = readU32(bytes, 20);
+  const sampleRate = readU32(bytes, 24);
+  if (version !== BANK_VERSION)
+    throw new Error(`Unsupported sample-bank version ${version}.`);
+  if (capacity < DATA_OFFSET || capacity > bytes.length
+      || used < DATA_OFFSET || used > capacity
+      || count < 1 || count > MAX_ENTRIES
+      || !SUPPORTED_BANK_RATES.has(sampleRate)
+      || readU32(bytes, 28) !== ENTRY_SIZE
+      || readU32(bytes, 32) !== MAX_ENTRIES
+      || readU32(bytes, 36) !== DATA_OFFSET)
+    throw new Error("The sample-bank header is invalid.");
+
+  const samples = [];
+  for (let index = 0; index < count; index += 1) {
+    const entry = ENTRIES_OFFSET + index * ENTRY_SIZE;
+    const offset = readU32(bytes, entry + 32);
+    const length = readU32(bytes, entry + 36);
+    const expectedCrc = readU32(bytes, entry + 40);
+    if (length < 2 || (length & 1) !== 0 || offset < DATA_OFFSET
+        || offset > used || length > used - offset)
+      throw new Error(`Sample ${index + 1} has an invalid bank entry.`);
+    const pcm = bytes.subarray(offset, offset + length);
+    if (crc32(pcm) !== expectedCrc)
+      throw new Error(`Sample ${index + 1} failed its CRC check.`);
+    const pcmView = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+    const data = new Float32Array(length / 2);
+    for (let frame = 0; frame < data.length; frame += 1) {
+      const value = pcmView.getInt16(frame * 2, true);
+      data[frame] = value < 0 ? value / 32768 : value / 32767;
+    }
+    samples.push(makeSample({
+      name: readName(bytes, entry) || `SAMPLE ${index + 1}`,
+      sourceRate: sampleRate,
+      data,
+      origin: "SAMPLE_BANK.BIN",
+    }));
+  }
+  return { samples, capacity, used, sampleRate };
+}
+
+export function formatBytes(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+const DOL_HEADER_SIZE = 0x100;
+const DOL_TEXT_SECTION_COUNT = 7;
+const DOL_DATA_SECTION_COUNT = 11;
+const DOL_TEXT_OFFSETS = 0x00;
+const DOL_DATA_OFFSETS = 0x1c;
+const DOL_TEXT_ADDRESSES = 0x48;
+const DOL_DATA_ADDRESSES = 0x64;
+const DOL_TEXT_SIZES = 0x90;
+const DOL_DATA_SIZES = 0xac;
+const DOL_ENTRY_POINT = 0xe0;
+const BANK_DATA_OFFSET = 64 + 64 * 64;
+const BANK_MAGIC_BYTES = new TextEncoder().encode("NDSGRN01");
+
+function bytesOf(input) {
+  return input instanceof Uint8Array ? input : new Uint8Array(input);
+}
+
+function readU32Be(bytes, offset) {
+  if (offset < 0 || offset + 4 > bytes.length)
+    throw new Error("The DOL header is truncated.");
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    .getUint32(offset, false);
+}
+
+function readU32Le(bytes, offset) {
+  if (offset < 0 || offset + 4 > bytes.length)
+    throw new Error("The embedded sample-bank header is truncated.");
+  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    .getUint32(offset, true);
+}
+
+function writeU32Le(bytes, offset, value) {
+  new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    .setUint32(offset, value >>> 0, true);
+}
+
+function hasMagic(bytes, offset) {
+  if (offset < 0 || offset + BANK_MAGIC_BYTES.length > bytes.length)
+    return false;
+  for (let index = 0; index < BANK_MAGIC_BYTES.length; index += 1) {
+    if (bytes[offset + index] !== BANK_MAGIC_BYTES[index]) return false;
+  }
+  return true;
+}
+
+function collectSections(bytes, offsetTable, addressTable, sizeTable,
+                         count, type) {
+  const sections = [];
+  for (let index = 0; index < count; index += 1) {
+    const fileOffset = readU32Be(bytes, offsetTable + index * 4);
+    const address = readU32Be(bytes, addressTable + index * 4);
+    const size = readU32Be(bytes, sizeTable + index * 4);
+    if (size === 0) continue;
+    const end = fileOffset + size;
+    if (fileOffset < DOL_HEADER_SIZE || end < fileOffset
+        || end > bytes.length || address < 0x80000000
+        || address + size > 0x81800000) {
+      throw new Error(`The DOL ${type} section table is invalid.`);
+    }
+    sections.push({ fileOffset, end, address, size, type, index });
+  }
+  return sections;
+}
+
+function dolSections(bytes) {
+  if (bytes.length < DOL_HEADER_SIZE)
+    throw new Error("This file is too small to be a GameCube DOL.");
+  const entryPoint = readU32Be(bytes, DOL_ENTRY_POINT);
+  if (entryPoint < 0x80000000 || entryPoint >= 0x81800000)
+    throw new Error("This is not a supported GameCube DOL executable.");
+  const text = collectSections(bytes, DOL_TEXT_OFFSETS,
+    DOL_TEXT_ADDRESSES, DOL_TEXT_SIZES, DOL_TEXT_SECTION_COUNT, "text");
+  const data = collectSections(bytes, DOL_DATA_OFFSETS,
+    DOL_DATA_ADDRESSES, DOL_DATA_SIZES, DOL_DATA_SECTION_COUNT, "data");
+  if (!text.length || !data.length)
+    throw new Error("The DOL has no usable text or data sections.");
+  return { text, data, entryPoint };
+}
+
+function validBankCandidate(bytes, offset, sectionEnd) {
+  if (!hasMagic(bytes, offset) || offset + BANK_DATA_OFFSET > sectionEnd)
+    return null;
+  const version = readU32Le(bytes, offset + 8);
+  const capacity = readU32Le(bytes, offset + 12);
+  const count = readU32Le(bytes, offset + 16);
+  const used = readU32Le(bytes, offset + 20);
+  const sampleRate = readU32Le(bytes, offset + 24);
+  if (version !== 1 || capacity < BANK_DATA_OFFSET
+      || offset + capacity > sectionEnd || used < BANK_DATA_OFFSET
+      || used > capacity || count < 1 || count > 64
+      || (sampleRate !== 16384 && sampleRate !== 48000)
+      || readU32Le(bytes, offset + 28) !== 64
+      || readU32Le(bytes, offset + 32) !== 64
+      || readU32Le(bytes, offset + 36) !== BANK_DATA_OFFSET)
+    return null;
+  return { bankOffset: offset, bankCapacity: capacity, bankUsed: used };
+}
+
+function locateDolBank(input) {
+  const bytes = bytesOf(input);
+  const sections = dolSections(bytes);
+  const candidates = [];
+  for (const section of sections.data) {
+    for (let offset = section.fileOffset;
+        offset + BANK_MAGIC_BYTES.length <= section.end; offset += 1) {
+      if (bytes[offset] !== BANK_MAGIC_BYTES[0]) continue;
+      const candidate = validBankCandidate(bytes, offset, section.end);
+      if (candidate) candidates.push({ ...candidate, section });
+    }
+  }
+  if (candidates.length === 0)
+    throw new Error("No embedded NDSGRN01 sample bank was found in this DOL.");
+  if (candidates.length > 1)
+    throw new Error("The DOL contains multiple embedded sample banks and cannot be patched safely.");
+  return { bytes, entryPoint: sections.entryPoint, ...candidates[0] };
+}
+
+function replacementUsedLength(bank) {
+  if (!hasMagic(bank, 0) || bank.length < BANK_DATA_OFFSET)
+    throw new Error("The replacement bank is not a complete NDSGRN01 bank.");
+  const capacity = readU32Le(bank, 12);
+  const used = readU32Le(bank, 20);
+  if (capacity < BANK_DATA_OFFSET || capacity > bank.length
+      || used < BANK_DATA_OFFSET || used > capacity)
+    throw new Error("The replacement sample-bank header is invalid.");
+  return used;
+}
+
+export function extractDolBank(input) {
+  const located = locateDolBank(input);
+  return {
+    bank: located.bytes.slice(located.bankOffset,
+      located.bankOffset + located.bankCapacity),
+    bankOffset: located.bankOffset,
+    bankCapacity: located.bankCapacity,
+    bankUsed: located.bankUsed,
+    entryPoint: located.entryPoint,
+  };
+}
+
+export function patchDolBank(input, replacementBank) {
+  const located = locateDolBank(input);
+  const bank = bytesOf(replacementBank);
+  const used = replacementUsedLength(bank);
+  if (used > located.bankCapacity) {
+    throw new Error(`The replacement bank needs ${used} bytes but this DOL reserves only ${located.bankCapacity} bytes.`);
+  }
+
+  const output = located.bytes.slice();
+  output.fill(0, located.bankOffset,
+    located.bankOffset + located.bankCapacity);
+  output.set(bank.subarray(0, used), located.bankOffset);
+  writeU32Le(output, located.bankOffset + 12, located.bankCapacity);
+  return output;
+}
+
+function fourCc(bytes, offset) {
+  return String.fromCharCode(bytes[offset], bytes[offset + 1],
+    bytes[offset + 2], bytes[offset + 3]);
+}
+
+function readInt24(view, offset) {
+  let value = view.getUint8(offset)
+    | (view.getUint8(offset + 1) << 8)
+    | (view.getUint8(offset + 2) << 16);
+  if (value & 0x800000) value -= 0x1000000;
+  return value;
+}
+
+export function decodePcmWav(input) {
+  const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+  if (bytes.length < 44 || fourCc(bytes, 0) !== "RIFF"
+      || fourCc(bytes, 8) !== "WAVE")
+    throw new Error("File is not a RIFF/WAVE audio file.");
+
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let format = null;
+  let dataOffset = -1;
+  let dataLength = 0;
+  for (let offset = 12; offset + 8 <= bytes.length;) {
+    const id = fourCc(bytes, offset);
+    const length = view.getUint32(offset + 4, true);
+    const payload = offset + 8;
+    if (payload + length > bytes.length)
+      throw new Error(`WAV ${id} chunk extends beyond the file.`);
+    if (id === "fmt ") {
+      if (length < 16) throw new Error("WAV format chunk is incomplete.");
+      let encoding = view.getUint16(payload, true);
+      const channels = view.getUint16(payload + 2, true);
+      const sampleRate = view.getUint32(payload + 4, true);
+      const blockAlign = view.getUint16(payload + 12, true);
+      const bitsPerSample = view.getUint16(payload + 14, true);
+      if (encoding === 0xfffe && length >= 40)
+        encoding = view.getUint16(payload + 24, true);
+      format = { encoding, channels, sampleRate, blockAlign, bitsPerSample };
+    } else if (id === "data") {
+      dataOffset = payload;
+      dataLength = length;
+    }
+    offset = payload + length + (length & 1);
+  }
+
+  if (!format || dataOffset < 0)
+    throw new Error("WAV file has no usable format or data chunk.");
+  if (format.encoding !== 1 || format.channels < 1 || format.channels > 8
+      || ![16, 24].includes(format.bitsPerSample)
+      || format.sampleRate < 8000 || format.sampleRate > 192000) {
+    throw new Error("Only 16-bit or 24-bit integer PCM WAV audio is supported.");
+  }
+  const bytesPerSample = format.bitsPerSample / 8;
+  if (format.blockAlign < format.channels * bytesPerSample)
+    throw new Error("WAV block alignment is invalid.");
+
+  const frames = Math.floor(dataLength / format.blockAlign);
+  if (frames < 1) throw new Error("WAV file contains no complete audio frames.");
+  const data = new Float32Array(frames);
+  let stereoEnergy = 0;
+  let differenceEnergy = 0;
+  for (let frame = 0; frame < frames; frame += 1) {
+    const base = dataOffset + frame * format.blockAlign;
+    let sum = 0;
+    let left = 0;
+    let right = 0;
+    for (let channel = 0; channel < format.channels; channel += 1) {
+      const offset = base + channel * bytesPerSample;
+      const value = format.bitsPerSample === 16
+        ? view.getInt16(offset, true) / 32768
+        : readInt24(view, offset) / 8388608;
+      if (channel === 0) left = value;
+      if (channel === 1) right = value;
+      sum += value;
+    }
+    data[frame] = sum / format.channels;
+    if (format.channels >= 2) {
+      stereoEnergy += (left * left + right * right) * .5;
+      const difference = left - right;
+      differenceEnergy += difference * difference * .5;
+    }
+  }
+  const stereoDifferenceDb = format.channels >= 2 && stereoEnergy > 0
+    ? 10 * Math.log10(Math.max(Number.EPSILON,
+      differenceEnergy / stereoEnergy)) : null;
+  return {
+    data,
+    sourceRate: format.sampleRate,
+    channels: format.channels,
+    bitsPerSample: format.bitsPerSample,
+    stereoDifferenceDb,
+  };
+}
+
+const elements = {
+  applicationInput: document.querySelector("#application-input"),
+  audioInput: document.querySelector("#audio-input"),
+  applicationDrop: document.querySelector("#application-drop"),
+  audioDrop: document.querySelector("#audio-drop"),
+  bankExportButton: document.querySelector("#bank-export-button"),
+  dolExportButton: document.querySelector("#dol-export-button"),
+  status: document.querySelector("#status"),
+  budgetLabel: document.querySelector("#budget-label"),
+  budgetFill: document.querySelector("#budget-fill"),
+  dolCapacity: document.querySelector("#dol-capacity"),
+  sampleCount: document.querySelector("#sample-count"),
+  poolList: document.querySelector("#pool-list"),
+  moveUp: document.querySelector("#move-up"),
+  moveDown: document.querySelector("#move-down"),
+  remove: document.querySelector("#remove"),
+  clearAll: document.querySelector("#clear-all"),
+  play: document.querySelector("#play"),
+  stop: document.querySelector("#stop"),
+  waveform: document.querySelector("#waveform"),
+  name: document.querySelector("#sample-name"),
+  gain: document.querySelector("#sample-gain"),
+  trimStart: document.querySelector("#trim-start"),
+  trimEnd: document.querySelector("#trim-end"),
+  sourceRate: document.querySelector("#source-rate"),
+  preparedDuration: document.querySelector("#prepared-duration"),
+  pcmSize: document.querySelector("#pcm-size"),
+  origin: document.querySelector("#sample-origin"),
+};
+
+let samples = [];
+let selectedId = null;
+let applicationBytes = null;
+let applicationName = "";
+let applicationBankCapacity = null;
+let audioContext = null;
+let playingSource = null;
+let draggingBoundary = null;
+
+function selectedSample() {
+  return samples.find(sample => sample.id === selectedId) ?? null;
+}
+
+function context() {
+  if (!audioContext)
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  return audioContext;
+}
+
+function setStatus(message, kind = "") {
+  elements.status.textContent = message;
+  elements.status.className = `status ${kind}`;
+}
+
+function stopPreview() {
+  if (playingSource) {
+    try { playingSource.stop(); } catch { /* already stopped */ }
+  }
+  playingSource = null;
+  elements.stop.disabled = true;
+}
+
+function renderBudget() {
+  const estimated = samples.length ? estimatedBankBytes(samples) : DATA_OFFSET;
+  const usage = Math.min(100, estimated / MAX_BANK_BYTES * 100);
+  const over = estimated > MAX_BANK_BYTES || samples.length > MAX_ENTRIES;
+  const dolOver = applicationBankCapacity !== null
+    && estimated > applicationBankCapacity;
+  elements.budgetLabel.textContent = `${formatBytes(estimated)} / ${formatBytes(MAX_BANK_BYTES)} · ${samples.length}/${MAX_ENTRIES} slots`;
+  elements.budgetFill.style.width = `${usage}%`;
+  elements.budgetFill.classList.toggle("over", over);
+  if (applicationBankCapacity === null) {
+    elements.dolCapacity.textContent = "DOL SLOT · OPEN A DOL FOR PATCHED-DOL EXPORT";
+  } else {
+    const suffix = dolOver ? ` · OVER BY ${formatBytes(estimated - applicationBankCapacity)}` : "";
+    elements.dolCapacity.textContent = `${formatBytes(estimated)} / ${formatBytes(applicationBankCapacity)} DOL SLOT${suffix}`;
+  }
+  elements.dolCapacity.classList.toggle("over", dolOver);
+  elements.bankExportButton.disabled = over || samples.length === 0;
+  elements.dolExportButton.disabled = over || dolOver || samples.length === 0
+    || applicationBytes === null;
+}
+
+function renderPool() {
+  elements.poolList.replaceChildren();
+  if (!samples.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty";
+    empty.textContent = "No samples in the bank.";
+    elements.poolList.append(empty);
+  }
+  samples.forEach((sample, index) => {
+    const row = document.createElement("button");
+    row.className = `pool-row ${sample.id === selectedId ? "selected" : ""}`;
+    row.type = "button";
+    const number = document.createElement("span");
+    number.textContent = String(index + 1).padStart(2, "0");
+    const name = document.createElement("span");
+    name.className = "pool-name";
+    name.textContent = sample.name;
+    const duration = document.createElement("span");
+    duration.textContent = `${((sample.trimEnd - sample.trimStart) / sample.sourceRate).toFixed(2)}s`;
+    row.append(number, name, duration);
+    row.addEventListener("click", () => {
+      stopPreview();
+      selectedId = sample.id;
+      render();
+    });
+    elements.poolList.append(row);
+  });
+  elements.sampleCount.textContent = String(samples.length);
+
+  const selected = selectedSample();
+  const index = selected ? samples.findIndex(sample => sample.id === selected.id) : -1;
+  elements.moveUp.disabled = index <= 0;
+  elements.moveDown.disabled = index < 0 || index >= samples.length - 1;
+  elements.remove.disabled = !selected;
+  elements.clearAll.disabled = samples.length === 0;
+}
+
+function drawWaveform() {
+  const canvas = elements.waveform;
+  const graphics = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  graphics.fillStyle = "#000";
+  graphics.fillRect(0, 0, width, height);
+  graphics.strokeStyle = "#202020";
+  graphics.lineWidth = 1;
+  for (let division = 0; division <= 8; division += 1) {
+    const x = division * width / 8;
+    graphics.beginPath();
+    graphics.moveTo(x, 0);
+    graphics.lineTo(x, height);
+    graphics.stroke();
+  }
+  graphics.strokeStyle = "#555";
+  graphics.beginPath();
+  graphics.moveTo(0, height / 2);
+  graphics.lineTo(width, height / 2);
+  graphics.stroke();
+
+  const sample = selectedSample();
+  if (!sample) return;
+  const startX = sample.trimStart / sample.data.length * width;
+  const endX = sample.trimEnd / sample.data.length * width;
+  const samplesPerPixel = sample.data.length / width;
+  const displayGain = Math.pow(10, sample.gainDb / 20);
+  for (let x = 0; x < width; x += 1) {
+    const first = Math.floor(x * samplesPerPixel);
+    const last = Math.min(sample.data.length,
+      Math.max(first + 1, Math.ceil((x + 1) * samplesPerPixel)));
+    let minimum = 1;
+    let maximum = -1;
+    for (let frame = first; frame < last; frame += 1) {
+      const value = Math.max(-1, Math.min(1, sample.data[frame] * displayGain));
+      minimum = Math.min(minimum, value);
+      maximum = Math.max(maximum, value);
+    }
+    graphics.strokeStyle = x < startX || x > endX ? "#444" : "#fff";
+    graphics.beginPath();
+    graphics.moveTo(x + .5, height / 2 - maximum * height * .43);
+    graphics.lineTo(x + .5, height / 2 - minimum * height * .43);
+    graphics.stroke();
+  }
+
+  for (const [x, label] of [[startX, "IN"], [endX, "OUT"]]) {
+    graphics.strokeStyle = "#fff";
+    graphics.lineWidth = 2;
+    graphics.beginPath();
+    graphics.moveTo(x, 0);
+    graphics.lineTo(x, height);
+    graphics.stroke();
+    graphics.fillStyle = "#fff";
+    graphics.fillRect(label === "IN" ? x : x - 34, 0, 34, 18);
+    graphics.fillStyle = "#000";
+    graphics.font = "12px ui-monospace, monospace";
+    graphics.fillText(label, label === "IN" ? x + 7 : x - 29, 13);
+  }
+}
+
+function renderEditor() {
+  const sample = selectedSample();
+  const enabled = Boolean(sample);
+  for (const control of [elements.name, elements.gain, elements.trimStart,
+    elements.trimEnd, elements.play]) control.disabled = !enabled;
+  if (!sample) {
+    elements.name.value = "";
+    elements.gain.value = "0";
+    elements.trimStart.value = "0";
+    elements.trimEnd.value = "0";
+    elements.sourceRate.textContent = "—";
+    elements.preparedDuration.textContent = "—";
+    elements.pcmSize.textContent = "—";
+    elements.origin.textContent = "—";
+    drawWaveform();
+    return;
+  }
+
+  const preparedFrames = Math.max(1,
+    Math.round((sample.trimEnd - sample.trimStart) * TARGET_RATE / sample.sourceRate));
+  elements.name.value = sample.name;
+  elements.gain.value = String(sample.gainDb);
+  elements.trimStart.value = (sample.trimStart / sample.sourceRate * 1000).toFixed(1);
+  elements.trimEnd.value = (sample.trimEnd / sample.sourceRate * 1000).toFixed(1);
+  elements.sourceRate.textContent = `${sample.sourceRate} HZ`;
+  elements.preparedDuration.textContent = `${(preparedFrames / TARGET_RATE).toFixed(3)} S`;
+  elements.pcmSize.textContent = formatBytes(preparedFrames * 2);
+  elements.origin.textContent = sample.origin;
+  drawWaveform();
+}
+
+function render() {
+  renderPool();
+  renderBudget();
+  renderEditor();
+}
+
+async function openSource(file) {
+  if (!file) return;
+  try {
+    stopPreview();
+    const input = new Uint8Array(await file.arrayBuffer());
+    const isDol = /\.dol$/i.test(file.name);
+    let decoded;
+    let detail;
+    if (isDol) {
+      const embedded = extractDolBank(input);
+      decoded = decodeBank(embedded.bank);
+      applicationBytes = input;
+      applicationName = file.name;
+      applicationBankCapacity = embedded.bankCapacity;
+      detail = `${decoded.samples.length} embedded samples, ${formatBytes(decoded.used)} used in a ${formatBytes(embedded.bankCapacity)} DOL slot`;
+    } else {
+      decoded = decodeBank(input);
+      applicationBytes = null;
+      applicationName = "";
+      applicationBankCapacity = null;
+      detail = `${decoded.samples.length} samples, ${formatBytes(decoded.used)} external bank`;
+    }
+    samples = decoded.samples;
+    for (const sample of samples)
+      sample.origin = isDol ? `EMBEDDED · ${file.name}` : file.name;
+    selectedId = samples[0]?.id ?? null;
+    render();
+    const conversion = decoded.sampleRate === TARGET_RATE ? ""
+      : ` Legacy ${decoded.sampleRate} Hz audio will be upgraded on export.`;
+    setStatus(`Opened ${file.name}: ${detail}, ${decoded.sampleRate} Hz.${conversion}`, "success");
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), "error");
+  }
+}
+
+async function addAudio(files) {
+  const incoming = Array.from(files).filter(file =>
+    /\.(wav|aif|aiff|mp3|m4a|ogg|flac)$/i.test(file.name));
+  if (!incoming.length) {
+    setStatus("No supported audio files were selected.", "error");
+    return;
+  }
+  if (samples.length + incoming.length > MAX_ENTRIES) {
+    setStatus(`Only ${MAX_ENTRIES - samples.length} sample slots remain.`, "error");
+    return;
+  }
+  try {
+    const added = [];
+    for (const file of incoming) {
+      const encoded = await file.arrayBuffer();
+      let data;
+      let sourceRate;
+      if (/\.wav$/i.test(file.name)) {
+        try {
+          const decoded = decodePcmWav(new Uint8Array(encoded));
+          data = decoded.data;
+          sourceRate = decoded.sourceRate;
+        } catch {
+          // Let the browser handle valid WAV encodings beyond integer PCM.
+        }
+      }
+      if (!data) {
+        const buffer = await context().decodeAudioData(encoded.slice(0));
+        data = new Float32Array(buffer.length);
+        sourceRate = buffer.sampleRate;
+        for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
+          const channelData = buffer.getChannelData(channel);
+          for (let frame = 0; frame < data.length; frame += 1)
+            data[frame] += channelData[frame] / buffer.numberOfChannels;
+        }
+      }
+      added.push(makeSample({
+        name: file.name.replace(/\.[^.]+$/, ""),
+        sourceRate,
+        data,
+        origin: file.name,
+      }));
+    }
+    samples.push(...added);
+    selectedId = added[0]?.id ?? selectedId;
+    render();
+    setStatus(`Added ${added.length} sample${added.length === 1 ? "" : "s"}. Export is 48 kHz mono PCM16.`, "success");
+  } catch (error) {
+    setStatus(`Audio decode failed: ${error instanceof Error ? error.message : String(error)}`, "error");
+  }
+}
+
+function downloadBytes(bytes, filename) {
+  const blob = new Blob([bytes], { type: "application/octet-stream" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function exportBank() {
+  try {
+    const bank = buildBank(samples);
+    downloadBytes(bank, "sample_bank.bin");
+    setStatus(`Built sample_bank.bin: ${samples.length} samples, ${formatBytes(bank.length)}. Copy it to /gamecube-ambient-granulator/ on the SD card.`, "success");
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), "error");
+  }
+}
+
+function exportDol() {
+  try {
+    if (applicationBytes === null || applicationBankCapacity === null)
+      throw new Error("Open the GameCube DOL before exporting a patched DOL.");
+    const bank = buildBank(samples, applicationBankCapacity);
+    const output = patchDolBank(applicationBytes, bank);
+    const stem = applicationName.replace(/\.dol$/i, "")
+      || "gamecube_ambient_granulator";
+    const filename = `${stem}-patched.dol`;
+    downloadBytes(output, filename);
+    setStatus(`Built ${filename}: ${samples.length} embedded samples, ${formatBytes(bank.length)} bank, original ${formatBytes(output.length)} DOL size preserved. Remove any external sample_bank.bin when testing it.`, "success");
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), "error");
+  }
+}
+
+function preview() {
+  const sample = selectedSample();
+  if (!sample) return;
+  stopPreview();
+  const data = resampleSample(sample);
+  const audio = context();
+  const buffer = audio.createBuffer(1, data.length, TARGET_RATE);
+  buffer.copyToChannel(data, 0);
+  const source = audio.createBufferSource();
+  source.buffer = buffer;
+  source.connect(audio.destination);
+  source.onended = () => {
+    if (playingSource === source) {
+      playingSource = null;
+      elements.stop.disabled = true;
+    }
+  };
+  source.start();
+  playingSource = source;
+  elements.stop.disabled = false;
+}
+
+function moveSelected(direction) {
+  const sample = selectedSample();
+  if (!sample) return;
+  const index = samples.findIndex(item => item.id === sample.id);
+  const target = index + direction;
+  if (target < 0 || target >= samples.length) return;
+  [samples[index], samples[target]] = [samples[target], samples[index]];
+  render();
+}
+
+function removeSelected() {
+  const sample = selectedSample();
+  if (!sample) return;
+  stopPreview();
+  const index = samples.findIndex(item => item.id === sample.id);
+  samples.splice(index, 1);
+  selectedId = samples[Math.min(index, samples.length - 1)]?.id ?? null;
+  render();
+}
+
+function clearAllSamples() {
+  stopPreview();
+  samples = [];
+  selectedId = null;
+  render();
+  setStatus("Sample pool cleared. Add audio to start a new bank.");
+}
+
+function updateSelected(patch) {
+  const sample = selectedSample();
+  if (!sample) return;
+  Object.assign(sample, patch);
+}
+
+function trimFromPointer(event) {
+  const sample = selectedSample();
+  if (!sample) return 0;
+  const rect = elements.waveform.getBoundingClientRect();
+  const fraction = Math.max(0, Math.min(1,
+    (event.clientX - rect.left) / rect.width));
+  return Math.round(fraction * sample.data.length);
+}
+
+function updateDraggedBoundary(event) {
+  const sample = selectedSample();
+  if (!sample || !draggingBoundary) return;
+  const position = trimFromPointer(event);
+  if (draggingBoundary === "start")
+    sample.trimStart = Math.min(position, sample.trimEnd - 1);
+  else
+    sample.trimEnd = Math.max(position, sample.trimStart + 1);
+  renderBudget();
+  renderPool();
+  renderEditor();
+}
+
+function installDropZone(element, handler) {
+  element.addEventListener("dragover", event => {
+    event.preventDefault();
+    element.classList.add("armed");
+  });
+  element.addEventListener("dragleave", () => element.classList.remove("armed"));
+  element.addEventListener("drop", event => {
+    event.preventDefault();
+    element.classList.remove("armed");
+    handler(event.dataTransfer.files);
+  });
+}
+
+elements.applicationInput.addEventListener("change", () =>
+  openSource(elements.applicationInput.files?.[0]));
+elements.audioInput.addEventListener("change", () => addAudio(elements.audioInput.files ?? []));
+installDropZone(elements.applicationDrop, files => openSource(files[0]));
+installDropZone(elements.audioDrop, addAudio);
+elements.bankExportButton.addEventListener("click", exportBank);
+elements.dolExportButton.addEventListener("click", exportDol);
+elements.moveUp.addEventListener("click", () => moveSelected(-1));
+elements.moveDown.addEventListener("click", () => moveSelected(1));
+elements.remove.addEventListener("click", removeSelected);
+elements.clearAll.addEventListener("click", clearAllSamples);
+elements.play.addEventListener("click", preview);
+elements.stop.addEventListener("click", stopPreview);
+
+elements.name.addEventListener("input", () => {
+  updateSelected({ name: elements.name.value.slice(0, 31) });
+  renderPool();
+});
+elements.gain.addEventListener("input", () => {
+  const gainDb = Math.max(-48, Math.min(18, Number(elements.gain.value) || 0));
+  updateSelected({ gainDb });
+  drawWaveform();
+});
+elements.trimStart.addEventListener("change", () => {
+  const sample = selectedSample();
+  if (!sample) return;
+  sample.trimStart = Math.max(0, Math.min(sample.trimEnd - 1,
+    Math.round((Number(elements.trimStart.value) || 0) * sample.sourceRate / 1000)));
+  render();
+});
+elements.trimEnd.addEventListener("change", () => {
+  const sample = selectedSample();
+  if (!sample) return;
+  sample.trimEnd = Math.min(sample.data.length, Math.max(sample.trimStart + 1,
+    Math.round((Number(elements.trimEnd.value) || 0) * sample.sourceRate / 1000)));
+  render();
+});
+
+elements.waveform.addEventListener("pointerdown", event => {
+  const sample = selectedSample();
+  if (!sample) return;
+  elements.waveform.setPointerCapture(event.pointerId);
+  const position = trimFromPointer(event);
+  draggingBoundary = Math.abs(position - sample.trimStart)
+    <= Math.abs(position - sample.trimEnd) ? "start" : "end";
+  updateDraggedBoundary(event);
+});
+elements.waveform.addEventListener("pointermove", updateDraggedBoundary);
+elements.waveform.addEventListener("pointerup", () => { draggingBoundary = null; });
+elements.waveform.addEventListener("pointercancel", () => { draggingBoundary = null; });
+
+render();
+</script>
+</body>
+</html>

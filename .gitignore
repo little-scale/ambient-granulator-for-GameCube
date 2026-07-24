@@ -1,0 +1,10 @@
+/build/
+/*.dol
+/*.elf
+/*.map
+/data/sample_bank.bin
+/sd-card/
+/.dolphin-*/
+SHA256SUMS.txt
+GameCube_Homebrew_Project_Chat_Export.docx
+.DS_Store

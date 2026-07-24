@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>GameCube Ambient Granulator Bank Patcher</title>
+  <style>/*__PATCHER_CSS__*/</style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="masthead">
+      <div>
+        <h1>GAMECUBE AMBIENT GRANULATOR PATCHER</h1>
+        <p>standalone · offline · audio stays on this device</p>
+      </div>
+      <div class="format-stamp">PCM16 · MONO · 48000 HZ</div>
+    </header>
+
+    <section class="workflow" aria-label="Application patching workflow">
+      <label class="drop-zone" id="application-drop">
+        <input id="application-input" type="file" accept=".dol,.bin,application/octet-stream">
+        <b>OPEN DOL / BANK</b>
+        <span>edit an existing embedded or external bank</span>
+      </label>
+      <label class="drop-zone" id="audio-drop">
+        <input id="audio-input" type="file" accept="audio/*,.wav,.aif,.aiff,.flac,.mp3,.m4a,.ogg" multiple>
+        <b>ADD AUDIO</b>
+        <span>start a new bank or add to the open one</span>
+      </label>
+      <button class="export-button" id="bank-export-button" disabled>DOWNLOAD SAMPLE_BANK.BIN</button>
+      <button class="export-button secondary" id="dol-export-button" disabled>DOWNLOAD PATCHED DOL</button>
+    </section>
+
+    <div class="status" id="status" role="status">Add WAV files, open sample_bank.bin, or open the GameCube DOL.</div>
+
+    <section class="budget-panel" aria-label="Bank capacity">
+      <div class="budget-heading">
+        <b>BANK CAPACITY</b>
+        <span id="budget-label">4.1 KB / 16.00 MB · 0/64 slots</span>
+      </div>
+      <div class="budget-bar"><div id="budget-fill"></div></div>
+      <div class="dol-capacity" id="dol-capacity">DOL SLOT · OPEN A DOL FOR PATCHED-DOL EXPORT</div>
+    </section>
+
+    <div class="workspace">
+      <aside class="sample-pool panel">
+        <div class="panel-heading"><h2>SAMPLE POOL</h2><span id="sample-count">0</span></div>
+        <div class="pool-list" id="pool-list"><p class="empty">No samples in the bank.</p></div>
+        <div class="pool-actions">
+          <button id="move-up" disabled>MOVE UP</button>
+          <button id="move-down" disabled>MOVE DOWN</button>
+          <button id="remove" disabled>REMOVE</button>
+          <button id="clear-all" disabled>CLEAR ALL</button>
+        </div>
+      </aside>
+
+      <section class="editor panel">
+        <div class="panel-heading">
+          <h2>SAMPLE EDITOR</h2>
+          <div class="transport">
+            <button id="play" disabled>PLAY</button>
+            <button id="stop" disabled>STOP</button>
+          </div>
+        </div>
+        <canvas id="waveform" class="waveform" width="1200" height="300"
+          aria-label="Waveform with draggable trim boundaries"></canvas>
+        <p class="hint">Drag the IN and OUT boundaries. Preview and export use the white region.</p>
+
+        <div class="editor-grid">
+          <label>NAME<input id="sample-name" maxlength="31" disabled></label>
+          <label>GAIN<input id="sample-gain" type="number" min="-48" max="18" step="0.5" value="0" disabled><span class="unit">DB</span></label>
+          <label>TRIM IN<input id="trim-start" type="number" min="0" step="1" value="0" disabled><span class="unit">MS</span></label>
+          <label>TRIM OUT<input id="trim-end" type="number" min="0" step="1" value="0" disabled><span class="unit">MS</span></label>
+        </div>
+
+        <div class="sample-stats">
+          <div><span>SOURCE</span><b id="source-rate">—</b></div>
+          <div><span>PREPARED</span><b id="prepared-duration">—</b></div>
+          <div><span>PCM SIZE</span><b id="pcm-size">—</b></div>
+          <div><span>ORIGIN</span><b id="sample-origin">—</b></div>
+        </div>
+      </section>
+    </div>
+
+    <footer>
+      Recommended: copy <code>sample_bank.bin</code> to
+      <code>/gamecube-ambient-granulator/</code> on the SD2SP2 card beside the
+      standard DOL. A patched DOL is useful for Dolphin or a self-contained
+      build; remove the external bank when testing its embedded samples.
+    </footer>
+  </main>
+  <script type="module">/*__PATCHER_JS__*/</script>
+</body>
+</html>
