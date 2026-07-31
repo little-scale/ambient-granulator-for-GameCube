@@ -15,7 +15,7 @@ release the next version instead.
 2. Build and verify the committed revision:
 
    ```sh
-   tools/release.sh v0.13
+   tools/release.sh v0.14
    ```
 
    This runs host tests, patcher tests, native PowerPC validation, and packages
@@ -30,14 +30,14 @@ release the next version instead.
 4. Create and push an annotated tag on the build commit:
 
    ```sh
-   git tag -a v0.13 -m "Ambient Granulator for GameCube v0.13"
-   git push origin v0.13
+   git tag -a v0.14 -m "Ambient Granulator for GameCube v0.14"
+   git push origin v0.14
    ```
 
 5. Create the GitHub Release from that tag and attach:
-   - `gamecube-ambient-granulator-v0.13.dol`
-   - `gamecube-ambient-granulator-sample-bank-v0.13.bin`
-   - `gamecube-granulator-patcher-v0.13.html`
+   - `gamecube-ambient-granulator-v0.14.dol`
+   - `gamecube-ambient-granulator-sample-bank-v0.14.bin`
+   - `gamecube-granulator-patcher-v0.14.html`
    - `SHA256SUMS.txt`
    - `LICENSE` and `SAMPLE_LICENSE.md`
 

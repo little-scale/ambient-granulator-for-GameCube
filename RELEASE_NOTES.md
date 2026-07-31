@@ -1,17 +1,24 @@
-# Ambient Granulator for GameCube v0.13
+# Ambient Granulator for GameCube v0.14
 
-This first public GameCube release brings Ambient Granulator's granular engine
-to libogc with 16 voices, a stereo effects chain, real-time output meters,
-waveform/transient navigation, an embedded ten-sample bank, SD2SP2 override,
-and a self-contained offline browser patcher.
+Version 0.14 starts making sound without controller input. On boot it selects
+one of the embedded samples at random, launches the configured grain burst
+(eight grains by default), and enables Freeze after the complete burst has
+populated the reverb. The result is a randomized sustained texture immediately
+after startup.
 
-The release includes the standard DOL, a matching SD2SP2 bank, and a browser
-patcher that can prepare external banks or patch an embedded bank that fits the
-existing DOL slot. The complete source WAV set is copyright-free and included
-in the repository.
+The previous source-sample set has been replaced by five piano samples:
+`01 - piano`, `03 - piano`, `05 - piano`, `07 - piano`, and `18 - piano`.
+The copyright holder has dedicated these WAV files and their generated
+sample-bank audio to the public domain under CC0 1.0 Universal. The application
+source remains MIT licensed.
+
+The release includes the standard DOL with the five-sample bank embedded, the
+matching SD2SP2 bank, the self-contained offline browser patcher, licences, and
+checksums. The build now discovers all WAV files in `samples/` and regenerates
+the bank whenever those files change.
 
 Verification covers the host granular engine, effects chain, output meter,
-bank decoding/CRCs, input repeat logic, transient analysis, browser patcher,
-and native PowerPC ELF validation. Dolphin boot is supported by the included
-launcher. Physical GameCube checks remain the documented manual gate in
-`docs/HARDWARE_TEST.md`.
+bank decoding/CRCs, input repeat logic, transient analysis, all five samples,
+the browser patcher, archive integrity, and native big-endian PowerPC ELF
+validation. Physical GameCube and SD2SP2 acceptance remains the documented
+manual gate in `docs/HARDWARE_TEST.md`.

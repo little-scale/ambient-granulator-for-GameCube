@@ -1,5 +1,6 @@
 #include <fat.h>
 #include <gccore.h>
+#include <ogc/lwp_watchdog.h>
 #include <ogcsys.h>
 #include <sdcard/gcsd.h>
 
@@ -133,6 +134,19 @@ static int clamp_int(int value, int minimum, int maximum)
     if (value > maximum)
         return maximum;
     return value;
+}
+
+static int random_startup_sample_index(uint32_t sample_count)
+{
+    if (sample_count == 0)
+        return 0;
+
+    u64 ticks = gettime();
+    uint32_t random = (uint32_t)ticks ^ (uint32_t)(ticks >> 32);
+    random ^= random << 13;
+    random ^= random >> 17;
+    random ^= random << 5;
+    return (int)(random % sample_count);
 }
 
 static uint32_t sample_position_from_x(const LoadedSample *sample, int x)
@@ -387,7 +401,7 @@ static void draw_controls_view(Ui *ui, const AppState *state,
     snprintf(text, sizeof(text), "S%02d", state->sample_index + 1);
     ui_draw_text(ui, 8, TOP_ROW_OFFSET, text, false);
     ui_draw_text(ui, 20, TOP_ROW_OFFSET, "VOICE", false);
-    ui_draw_text(ui, 33, TOP_ROW_OFFSET, "GC 0.13", false);
+    ui_draw_text(ui, 33, TOP_ROW_OFFSET, "GC 0.14", false);
     ui_draw_rule(ui, 0, TOP_ROW_OFFSET * 8 + 7, 144, false);
     ui_draw_rule(ui, 160, TOP_ROW_OFFSET * 8 + 7, 144, false);
     ui_draw_section_header(ui, 0, 8 + TOP_ROW_OFFSET, "CLOCK");
@@ -651,8 +665,9 @@ int main(void)
         ui_shutdown(&ui);
         return 1;
     }
-    if (!load_sample(&bank, &loaded, NULL, &state, 0)) {
-        draw_error_view(&ui, "FIRST SAMPLE FAILED", -2);
+    int startup_sample = random_startup_sample_index(bank.sample_count);
+    if (!load_sample(&bank, &loaded, NULL, &state, startup_sample)) {
+        draw_error_view(&ui, "STARTUP SAMPLE FAILED", -2);
         sample_bank_close(&bank);
         if (sd_mounted)
             fatUnmount("sd2");
@@ -679,8 +694,13 @@ int main(void)
         return 1;
     }
 
+    uint32_t startup_grains_before = audio_output_grains_launched(&audio);
+    int startup_grain_count = parameters[PARAM_GRAINS].value;
+    trigger_burst(&audio, &state);
+    state.audition_ttl = 180;
+    bool startup_freeze_pending = true;
+
     bool running = true;
-    int startup_audition_frames = 30;
     while (running && SYS_MainLoop()) {
         ui_wait_vsync();
         PAD_ScanPads();
@@ -728,8 +748,10 @@ int main(void)
                 trigger_burst(&audio, &state);
             state.b_pressed = false;
         }
-        if (down & PAD_TRIGGER_L)
+        if (down & PAD_TRIGGER_L) {
             parameters[PARAM_REVERB_FREEZE].value ^= 1;
+            startup_freeze_pending = false;
+        }
         if (down & PAD_TRIGGER_R)
             parameters[PARAM_CLOCK].value ^= 1;
         if (state.view == 0) {
@@ -753,10 +775,12 @@ int main(void)
                 set_playhead_sample(&state, &loaded, transient_position);
         }
 
-        if (startup_audition_frames > 0
-                && --startup_audition_frames == 0) {
-            trigger_burst(&audio, &state);
-            state.audition_ttl = 180;
+        if (startup_freeze_pending
+                && (uint32_t)(audio_output_grains_launched(&audio)
+                    - startup_grains_before)
+                    >= (uint32_t)startup_grain_count) {
+            parameters[PARAM_REVERB_FREEZE].value = 1;
+            startup_freeze_pending = false;
         }
         if (state.audition_ttl > 0)
             state.audition_ttl--;

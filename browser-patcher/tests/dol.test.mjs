@@ -74,12 +74,13 @@ test("rejects invalid DOLs, invalid banks, and a bank larger than its slot", () 
 
 const nativeDolUrl = new URL("../../gamecube_ambient_granulator.dol",
   import.meta.url);
-test("opens and safely patches the current native v0.13 DOL", {
+test("opens and safely patches the current native v0.14 DOL", {
   skip: !existsSync(nativeDolUrl),
 }, () => {
   const nativeDol = new Uint8Array(readFileSync(nativeDolUrl));
   const extracted = extractDolBank(nativeDol);
-  assert.equal(decodeBank(extracted.bank).samples.length, 10);
+  assert.equal(decodeBank(extracted.bank).samples.length,
+    decodedRealBank.samples.length);
   assert.deepEqual(extracted.bank, realBank);
 
   const replacement = buildBank(decodedRealBank.samples.slice(0, 2));

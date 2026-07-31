@@ -9,8 +9,8 @@ Microphone input is deliberately not part of this port.
 
 ## Try it in Dolphin
 
-The repository includes the complete ten-sample bank inside the DOL, so all
-samples work in emulation without a virtual SD card.
+The repository includes the bank generated from the WAV files in `samples/`
+inside the DOL, so all samples work in emulation without a virtual SD card.
 
 ```sh
 ./tools/build.sh
@@ -43,8 +43,9 @@ are not the same as the GameCube button labels. With the default map use:
 The Control view's persistent `GRAIN` counter confirms whether a trigger
 reached the synthesis engine. If it rises and the peak meters move, the ROM is
 producing audio even if the desktop audio backend is muted or misconfigured.
-Version 0.13 also performs one automatic grain audition shortly after boot so
-the entire audio path can be checked without a controller mapping.
+Version 0.14 selects a random sample at boot, launches the configured grain
+burst, then enables Freeze after the burst has populated the reverb. This
+starts a randomized sustained texture without controller input.
 
 ## Controls
 
@@ -156,12 +157,18 @@ The host suite covers the granular scheduler and renderer, effects chain,
 metering, CRC validation, and little-endian bank decoding. The native check
 then confirms an ELF32, big-endian PowerPC executable.
 
-To rebuild the embedded bank from one or more PCM WAV files:
+To rebuild the embedded bank from every PCM WAV file in `samples/`:
 
 ```sh
-node tools/build-sample-bank.mjs samples/1.wav
+node tools/build-sample-bank.mjs
+```
+
+You can also provide an explicit list or alternate output:
+
+```sh
+node tools/build-sample-bank.mjs samples/one.wav samples/two.wav
 node tools/build-sample-bank.mjs \
-  --output=data/sample_bank.bin samples/1.wav samples/another.wav
+  --output=data/sample_bank.bin samples/one.wav samples/two.wav
 ```
 
 The builder accepts 16- or 24-bit integer PCM WAV audio, downmixes it to mono,
@@ -180,7 +187,8 @@ Working in this first port:
 - switchable ports of the original 3DS control and waveform screens;
 - custom framebuffer renderer with the original 5x7 tracker font;
 - waveform, playhead, actual grain markers, parameters, and diagnostics;
-- complete ten-sample embedded bank plus the matching SD2SP2 override;
+- complete embedded bank generated from `samples/`, plus the matching SD2SP2
+  override;
 - endian-safe reuse of 3DS/DS `NDSGRN01` banks;
 - Dolphin boot and host/native automated verification.
 
@@ -199,6 +207,7 @@ details.
 ## Licence and releases
 
 The software is MIT licensed; see [LICENSE](LICENSE). The bundled WAV files
-are copyright-free source material approved for redistribution; see
-[samples/README.md](samples/README.md). See [RELEASING.md](RELEASING.md) for
-the GitHub release procedure, checksums, and hardware-verification wording.
+and generated sample-bank audio are dedicated to the public domain under
+CC0 1.0 Universal; see [samples/README.md](samples/README.md). See
+[RELEASING.md](RELEASING.md) for the GitHub release procedure, checksums, and
+hardware-verification wording.

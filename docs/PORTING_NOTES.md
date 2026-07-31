@@ -31,8 +31,9 @@ The callback performs no synthesis, allocation, file access, or locking.
 
 ## Sample loading and memory
 
-The DOL embeds the complete ten-sample bank for a zero-setup Dolphin boot. On
-hardware the app first mounts `__io_gcsd2` as `sd2:` and opens:
+The DOL embeds the complete bank generated from the WAV files in `samples/`
+for a zero-setup Dolphin boot. On hardware the app first mounts `__io_gcsd2`
+as `sd2:` and opens:
 
 ```text
 sd2:/gamecube-ambient-granulator/sample_bank.bin
@@ -51,8 +52,8 @@ stepping therefore feeds the granular engine an exact source offset while
 keeping the 320-column playhead only as a display coordinate. Silence produces
 an empty map and leaves the playhead unchanged.
 
-The full embedded bank makes the static linked image about 12.1 MiB, leaving
-roughly 11.9 MiB of the GameCube's 24 MiB main RAM for the heap and system
+The embedded bank is linked directly into the static image, with the remainder
+of the GameCube's 24 MiB main RAM available for the heap and system
 allocations. Runtime allocations include only the selected decoded sample,
 roughly 1.0 MiB of eight-line FDN and diffuser memory, the framebuffers, three
 4 KiB output buffers, and one render scratch buffer. An external SD bank does

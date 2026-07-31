@@ -61,7 +61,7 @@ static void test_close_hits_collapse_to_stronger_one(void)
     assert(map.sample_positions[0] == 13000);
 }
 
-static void test_sample_bank(const char *bank_path, bool require_first_hit)
+static void test_sample_bank(const char *bank_path)
 {
     SampleBank bank;
     memset(&bank, 0, sizeof(bank));
@@ -73,9 +73,12 @@ static void test_sample_bank(const char *bank_path, bool require_first_hit)
         assert(sample_bank_load(&bank, index, &sample));
         transient_analyze(sample.samples, sample.sample_count,
                           sample.sample_rate, &map);
-        if (require_first_hit && index == 0) {
-            assert(map.count >= 6);
-            assert(map.count <= 12);
+        for (size_t hit = 0; hit < map.count; hit++) {
+            assert(map.sample_positions[hit] < sample.sample_count);
+            assert(map.strengths[hit] > 0);
+            if (hit > 0)
+                assert(map.sample_positions[hit]
+                       > map.sample_positions[hit - 1]);
         }
         printf("sample %lu (%s) transient count: %lu\n",
                (unsigned long)(index + 1), sample.name,
@@ -91,8 +94,8 @@ int main(int argc, char **argv)
     test_silence_has_no_transients();
     test_impulses_and_wrapped_stepping();
     test_close_hits_collapse_to_stronger_one();
-    test_sample_bank(argv[1], true);
-    test_sample_bank(argv[2], false);
+    test_sample_bank(argv[1]);
+    test_sample_bank(argv[2]);
     puts("transient_analysis_test: all checks passed");
     return 0;
 }

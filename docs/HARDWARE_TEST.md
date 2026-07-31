@@ -10,19 +10,20 @@
 
 ## What a successful boot looks like
 
-- The upper-left heading says `GRAIN S01` and the upper-right shows `GC 0.13`.
-- The Control view shows `BANK 10 SD2SP2` and sample 1 of 10.
+- The upper-left heading says `GRAIN Sxx` and the upper-right shows `GC 0.14`.
+- The Control view shows the current bank size and a randomly selected sample.
 - The tracker font, both parameter columns, and meters are inside the TV safe
   area.
 - The underrun count remains at zero while idle.
 - `RT` shows current and worst 1024-frame render time; both should remain
   below the 21.3 ms buffer duration.
-- About half a second after boot, `AUDIO TEST` appears and a short granular
-  reverb audition sounds. The `GRAIN` count rises without controller input.
+- At boot, `AUDIO TEST` appears, the configured grain burst begins from the
+  randomly selected sample, and Freeze switches on after the complete burst
+  has excited the reverb. The `GRAIN` count rises without controller input.
 
-If the Control view says `BANK 10 EMBEDDED`, the DOL is running from its
-complete fallback bank, but the external bank was not mounted or opened. Check
-the exact path and filename first:
+If the Control view says `EMBEDDED`, the DOL is running from its complete
+fallback bank, but the external bank was not mounted or opened. Check the
+exact path and filename first:
 
 ```text
 /gamecube-ambient-granulator/sample_bank.bin
@@ -30,8 +31,9 @@ the exact path and filename first:
 
 ## Listening pass
 
-1. Confirm the automatic startup audition sounds, the grain counter rises,
-   `BUF` keeps advancing, and `UND` remains zero.
+1. Confirm the automatic startup texture sounds, the grain counter rises by
+   the configured `GRAINS` amount, Freeze reads `ON`, `BUF` keeps advancing,
+   and `UND` remains zero.
 2. Tap B once. A short burst should sound on release and the grain counter
    should rise.
 3. Hold A. Bursts should repeat continuously; release A to stop new grains.
@@ -48,8 +50,8 @@ the exact path and filename first:
 10. Switch to Waveform view. Short ticks at the screen edges indicate detected
     transients. X and Y should jump to the next and previous ticks and wrap at
     the ends. If `TRANS 000` is shown, they should not move the playhead.
-11. Press L after exciting the reverb. Freeze should hold the tail; press L
-   again to release it.
+11. Freeze starts on after the startup burst. Press L to release the frozen
+   tail; excite the reverb again, then press L to hold the new tail.
 12. Leave A held for at least two minutes while moving both sticks and changing
    samples. Note the final underrun count and the highest `RT MAX` value.
 13. Hold Z and press START to return to Swiss.
