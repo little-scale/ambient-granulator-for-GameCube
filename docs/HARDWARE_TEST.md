@@ -10,16 +10,16 @@
 
 ## What a successful boot looks like
 
-- The upper-left heading says `GRAIN Sxx` and the upper-right shows `GC 0.14`.
-- The Control view shows the current bank size and a randomly selected sample.
+- The ROM opens in the Waveform view and shows `KIOSK MODE`.
+- Without controller input, a random sample and one of the five kiosk pitches
+  are selected before the first grain burst.
 - The tracker font, both parameter columns, and meters are inside the TV safe
   area.
 - The underrun count remains at zero while idle.
 - `RT` shows current and worst 1024-frame render time; both should remain
   below the 21.3 ms buffer duration.
-- At boot, `AUDIO TEST` appears, the configured grain burst begins from the
-  randomly selected sample, and Freeze switches on after the complete burst
-  has excited the reverb. The `GRAIN` count rises without controller input.
+- The configured grain burst begins automatically and Freeze switches on after
+  the complete burst has excited the reverb.
 
 If the Control view says `EMBEDDED`, the DOL is running from its complete
 fallback bank, but the external bank was not mounted or opened. Check the
@@ -31,30 +31,33 @@ exact path and filename first:
 
 ## Listening pass
 
-1. Confirm the automatic startup texture sounds, the grain counter rises by
-   the configured `GRAINS` amount, Freeze reads `ON`, `BUF` keeps advancing,
-   and `UND` remains zero.
-2. Tap B once. A short burst should sound on release and the grain counter
+1. Do not touch any controller. Confirm the initial texture sounds, then wait
+   30–60 seconds. A different random sample and kiosk pitch should load,
+   Freeze should release, the configured grain burst should play, and Freeze
+   should return to `ON`.
+2. Touch any button, analog trigger, or stick. `KIOSK MODE` should disappear
+   immediately and no further automatic texture changes should occur.
+3. Tap B once. A short burst should sound on release and the grain counter
    should rise.
-3. Hold A. Bursts should repeat continuously; release A to stop new grains.
-4. Press START. The display should switch to the full-screen black waveform;
-   press START again to return to Control view without interrupting audio.
-5. In Control view, use the D-pad to move around both parameter columns. Hold
+4. Hold A. Bursts should repeat continuously; release A to stop new grains.
+5. Press START. The display should switch to the Control view; press START
+   again to return to Waveform without interrupting audio.
+6. In Control view, use the D-pad to move around both parameter columns. Hold
    a direction and confirm it repeats, then accelerates after about one second.
-6. Hold B and press Left/Right for fine edits or Down/Up for coarse edits. B
+7. Hold B and press Left/Right for fine edits or Down/Up for coarse edits. B
    plus a direction must not also trigger a grain burst when released.
-7. Move the C-stick left/right and tap B. The source position should change.
-8. Move the main stick vertically. Pitch should move by up to one octave.
-9. In Control view, press X and Y. The sample name and waveform should change
-   without a crash.
-10. Switch to Waveform view. Short ticks at the screen edges indicate detected
+8. Move the C-stick left/right and tap B. The source position should change.
+9. Move the main stick vertically. Pitch should move by up to one octave.
+10. In Control view, press X and Y. The sample name and waveform should change
+    without a crash.
+11. Switch to Waveform view. Short ticks at the screen edges indicate detected
     transients. X and Y should jump to the next and previous ticks and wrap at
     the ends. If `TRANS 000` is shown, they should not move the playhead.
-11. Freeze starts on after the startup burst. Press L to release the frozen
-   tail; excite the reverb again, then press L to hold the new tail.
-12. Leave A held for at least two minutes while moving both sticks and changing
-   samples. Note the final underrun count and the highest `RT MAX` value.
-13. Hold Z and press START to return to Swiss.
+12. Press L to release the frozen tail; excite the reverb again, then press L
+    to hold the new tail.
+13. Leave A held for at least two minutes while moving both sticks and changing
+    samples. Note the final underrun count and the highest `RT MAX` value.
+14. Hold Z and press START to return to Swiss.
 
 ## Report back
 

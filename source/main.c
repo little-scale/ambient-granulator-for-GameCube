@@ -13,6 +13,7 @@
 
 #include "audio_output.h"
 #include "edit_repeat.h"
+#include "kiosk_mode.h"
 #include "sample_bank.h"
 #include "sample_bank_bin.h"
 #include "transient_analysis.h"
@@ -24,6 +25,10 @@
 #define MARKER_COUNT 16
 #define MARKER_LIFETIME 24
 #define TOP_ROW_OFFSET 1
+#define MAIN_STICK_DEADZONE 18
+#define C_STICK_DEADZONE 22
+#define ANALOG_TRIGGER_DEADZONE 16
+#define KIOSK_THAW_MILLISECONDS 100
 #define EXTERNAL_BANK_PATH \
     "sd2:/gamecube-ambient-granulator/sample_bank.bin"
 
@@ -136,17 +141,27 @@ static int clamp_int(int value, int minimum, int maximum)
     return value;
 }
 
-static int random_startup_sample_index(uint32_t sample_count)
+static uint32_t kiosk_seed_from_time(void)
 {
-    if (sample_count == 0)
-        return 0;
-
     u64 ticks = gettime();
-    uint32_t random = (uint32_t)ticks ^ (uint32_t)(ticks >> 32);
-    random ^= random << 13;
-    random ^= random >> 17;
-    random ^= random << 5;
-    return (int)(random % sample_count);
+    return (uint32_t)ticks ^ (uint32_t)(ticks >> 32);
+}
+
+static bool controller_activity_detected(void)
+{
+    for (int pad = 0; pad < PAD_CHANMAX; pad++) {
+        if ((PAD_ButtonsDown(pad) | PAD_ButtonsUp(pad)
+                | PAD_ButtonsHeld(pad)) != 0)
+            return true;
+        if (abs((int)PAD_StickX(pad)) > MAIN_STICK_DEADZONE
+                || abs((int)PAD_StickY(pad)) > MAIN_STICK_DEADZONE
+                || abs((int)PAD_SubStickX(pad)) > C_STICK_DEADZONE
+                || abs((int)PAD_SubStickY(pad)) > C_STICK_DEADZONE
+                || PAD_TriggerL(pad) > ANALOG_TRIGGER_DEADZONE
+                || PAD_TriggerR(pad) > ANALOG_TRIGGER_DEADZONE)
+            return true;
+    }
+    return false;
 }
 
 static uint32_t sample_position_from_x(const LoadedSample *sample, int x)
@@ -312,6 +327,69 @@ static bool load_sample(SampleBank *bank, LoadedSample *loaded,
     return true;
 }
 
+static void prepare_kiosk_texture(KioskMode *kiosk, SampleBank *bank,
+                                  LoadedSample *loaded, AudioOutput *audio,
+                                  AppState *state)
+{
+    int selected = kiosk_mode_choose_sample(
+        kiosk, (int)bank->sample_count, state->sample_index,
+        !kiosk->has_started_texture);
+    parameters[PARAM_PITCH].value = kiosk_mode_choose_pitch(kiosk);
+    parameters[PARAM_REVERB_FREEZE].value = 0;
+    (void)load_sample(bank, loaded, audio, state, selected);
+    kiosk->has_started_texture = true;
+    kiosk->phase = KIOSK_PHASE_THAWING;
+    kiosk->deadline_ticks = gettime()
+                          + millisecs_to_ticks(KIOSK_THAW_MILLISECONDS);
+}
+
+static void update_kiosk(KioskMode *kiosk, SampleBank *bank,
+                         LoadedSample *loaded, AudioOutput *audio,
+                         AppState *state)
+{
+    if (!kiosk->active)
+        return;
+
+    u64 now = gettime();
+    if (kiosk->phase == KIOSK_PHASE_READY) {
+        prepare_kiosk_texture(kiosk, bank, loaded, audio, state);
+        return;
+    }
+    if (kiosk->phase == KIOSK_PHASE_THAWING) {
+        if (now < kiosk->deadline_ticks)
+            return;
+        kiosk->grains_before = audio_output_grains_launched(audio);
+        kiosk->grain_count = parameters[PARAM_GRAINS].value;
+        trigger_burst(audio, state);
+        state->audition_ttl = 180;
+        kiosk->phase = KIOSK_PHASE_SEEDING;
+        return;
+    }
+    if (kiosk->phase == KIOSK_PHASE_SEEDING) {
+        uint32_t launched = audio_output_grains_launched(audio)
+                          - kiosk->grains_before;
+        if (launched < (uint32_t)kiosk->grain_count)
+            return;
+        parameters[PARAM_REVERB_FREEZE].value = 1;
+        kiosk->phase = KIOSK_PHASE_WAITING;
+        int seconds = kiosk_mode_choose_interval_seconds(kiosk);
+        kiosk->deadline_ticks = now + secs_to_ticks(seconds);
+        return;
+    }
+    if (kiosk->phase == KIOSK_PHASE_WAITING
+            && now >= kiosk->deadline_ticks)
+        prepare_kiosk_texture(kiosk, bank, loaded, audio, state);
+}
+
+static void cancel_kiosk(KioskMode *kiosk, AudioOutput *audio)
+{
+    if (!kiosk->active)
+        return;
+    if (kiosk->phase == KIOSK_PHASE_SEEDING)
+        audio_output_stop_grains(audio);
+    kiosk_mode_cancel(kiosk);
+}
+
 static void format_parameter(int index, char *text, size_t text_size)
 {
     Parameter *parameter = &parameters[index];
@@ -401,7 +479,7 @@ static void draw_controls_view(Ui *ui, const AppState *state,
     snprintf(text, sizeof(text), "S%02d", state->sample_index + 1);
     ui_draw_text(ui, 8, TOP_ROW_OFFSET, text, false);
     ui_draw_text(ui, 20, TOP_ROW_OFFSET, "VOICE", false);
-    ui_draw_text(ui, 33, TOP_ROW_OFFSET, "GC 0.14", false);
+    ui_draw_text(ui, 33, TOP_ROW_OFFSET, "GC 0.15", false);
     ui_draw_rule(ui, 0, TOP_ROW_OFFSET * 8 + 7, 144, false);
     ui_draw_rule(ui, 160, TOP_ROW_OFFSET * 8 + 7, 144, false);
     ui_draw_section_header(ui, 0, 8 + TOP_ROW_OFFSET, "CLOCK");
@@ -495,7 +573,8 @@ static void draw_boundary(Ui *ui, int x)
 
 static void draw_waveform_view(Ui *ui, const AppState *state,
                                const SampleBank *bank,
-                               const LoadedSample *sample)
+                               const LoadedSample *sample,
+                               bool kiosk_active)
 {
     ui_begin(ui, SCREEN_WIDTH, false);
     const int zero_y = UI_LOGICAL_HEIGHT / 2;
@@ -540,6 +619,8 @@ static void draw_waveform_view(Ui *ui, const AppState *state,
              state->playhead_x, parameters[PARAM_RANGE].value,
              (unsigned long)state->transients.count);
     ui_draw_light_text(ui, 1, 2, text);
+    if (kiosk_active)
+        ui_draw_light_text(ui, 1, 3, "KIOSK MODE");
     ui_draw_light_text(ui, 1, 28, "A GATE B BURST X/Y TRANSIENT");
     ui_draw_light_text(ui, 1, 29,
                        "C-STICK POS START CONTROL Z+START EXIT");
@@ -646,6 +727,7 @@ int main(void)
     memset(&loaded, 0, sizeof(loaded));
     memset(&audio, 0, sizeof(audio));
     state.playhead_x = SCREEN_WIDTH / 2;
+    state.view = 1;
     snprintf(state.message, sizeof(state.message), "%s", "Starting audio...");
 
     bool sd_mounted = fatMountSimple("sd2", &__io_gcsd2);
@@ -665,9 +747,8 @@ int main(void)
         ui_shutdown(&ui);
         return 1;
     }
-    int startup_sample = random_startup_sample_index(bank.sample_count);
-    if (!load_sample(&bank, &loaded, NULL, &state, startup_sample)) {
-        draw_error_view(&ui, "STARTUP SAMPLE FAILED", -2);
+    if (!load_sample(&bank, &loaded, NULL, &state, 0)) {
+        draw_error_view(&ui, "INITIAL SAMPLE FAILED", -2);
         sample_bank_close(&bank);
         if (sd_mounted)
             fatUnmount("sd2");
@@ -694,16 +775,15 @@ int main(void)
         return 1;
     }
 
-    uint32_t startup_grains_before = audio_output_grains_launched(&audio);
-    int startup_grain_count = parameters[PARAM_GRAINS].value;
-    trigger_burst(&audio, &state);
-    state.audition_ttl = 180;
-    bool startup_freeze_pending = true;
+    KioskMode kiosk;
+    kiosk_mode_init(&kiosk, kiosk_seed_from_time());
 
     bool running = true;
     while (running && SYS_MainLoop()) {
         ui_wait_vsync();
         PAD_ScanPads();
+        if (kiosk.active && controller_activity_detected())
+            cancel_kiosk(&kiosk, &audio);
         u16 down = PAD_ButtonsDown(0);
         u16 up = PAD_ButtonsUp(0);
         u16 held = PAD_ButtonsHeld(0);
@@ -748,10 +828,8 @@ int main(void)
                 trigger_burst(&audio, &state);
             state.b_pressed = false;
         }
-        if (down & PAD_TRIGGER_L) {
+        if (down & PAD_TRIGGER_L)
             parameters[PARAM_REVERB_FREEZE].value ^= 1;
-            startup_freeze_pending = false;
-        }
         if (down & PAD_TRIGGER_R)
             parameters[PARAM_CLOCK].value ^= 1;
         if (state.view == 0) {
@@ -775,29 +853,23 @@ int main(void)
                 set_playhead_sample(&state, &loaded, transient_position);
         }
 
-        if (startup_freeze_pending
-                && (uint32_t)(audio_output_grains_launched(&audio)
-                    - startup_grains_before)
-                    >= (uint32_t)startup_grain_count) {
-            parameters[PARAM_REVERB_FREEZE].value = 1;
-            startup_freeze_pending = false;
-        }
+        update_kiosk(&kiosk, &bank, &loaded, &audio, &state);
         if (state.audition_ttl > 0)
             state.audition_ttl--;
 
         int stick_x = PAD_StickX(0);
         int stick_y = PAD_StickY(0);
-        state.live_pan = abs(stick_x) > 18
+        state.live_pan = abs(stick_x) > MAIN_STICK_DEADZONE
             ? clamp_int(stick_x * 100 / 100, -100, 100) : 0;
-        state.live_pitch = abs(stick_y) > 18
+        state.live_pitch = abs(stick_y) > MAIN_STICK_DEADZONE
             ? clamp_int(stick_y * 12 / 100, -12, 12) : 0;
 
         int cstick_x = PAD_SubStickX(0);
         int cstick_y = PAD_SubStickY(0);
-        if (abs(cstick_x) > 22)
+        if (abs(cstick_x) > C_STICK_DEADZONE)
             set_playhead_x(&state, &loaded,
                            state.playhead_x + cstick_x / 24);
-        if (abs(cstick_y) > 22)
+        if (abs(cstick_y) > C_STICK_DEADZONE)
             parameters[PARAM_RANGE].value = clamp_int(
                 parameters[PARAM_RANGE].value + cstick_y / 32,
                 parameters[PARAM_RANGE].minimum,
@@ -813,7 +885,7 @@ int main(void)
             draw_controls_view(&ui, &state, &bank, &loaded, &audio,
                                external_bank);
         else
-            draw_waveform_view(&ui, &state, &bank, &loaded);
+            draw_waveform_view(&ui, &state, &bank, &loaded, kiosk.active);
     }
 
     AudioRenderConfig quiet = render_config(&state, 0);

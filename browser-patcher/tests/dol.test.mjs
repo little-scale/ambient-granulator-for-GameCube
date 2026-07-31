@@ -74,7 +74,7 @@ test("rejects invalid DOLs, invalid banks, and a bank larger than its slot", () 
 
 const nativeDolUrl = new URL("../../gamecube_ambient_granulator.dol",
   import.meta.url);
-test("opens and safely patches the current native v0.14 DOL", {
+test("opens and safely patches the current native v0.15 DOL", {
   skip: !existsSync(nativeDolUrl),
 }, () => {
   const nativeDol = new Uint8Array(readFileSync(nativeDolUrl));

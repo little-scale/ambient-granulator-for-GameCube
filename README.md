@@ -43,9 +43,13 @@ are not the same as the GameCube button labels. With the default map use:
 The Control view's persistent `GRAIN` counter confirms whether a trigger
 reached the synthesis engine. If it rises and the peak meters move, the ROM is
 producing audio even if the desktop audio backend is muted or misconfigured.
-Version 0.14 selects a random sample at boot, launches the configured grain
-burst, then enables Freeze after the burst has populated the reverb. This
-starts a randomized sustained texture without controller input.
+When no controller activity is detected at startup, Kiosk mode selects a
+random sample, chooses a pitch from -12, -7, 0, +7, or +12 semitones, launches
+the configured grain burst, then enables Freeze after the burst has populated
+the reverb. Every 30–60 seconds it chooses a new random interval and repeats
+with a different sample. The first recognized button, analog trigger, or stick
+movement cancels Kiosk mode permanently and immediately hands control to the
+performer.
 
 ## Controls
 
@@ -69,15 +73,16 @@ starts a randomized sustained texture without controller input.
 
 ## Two-screen GUI port
 
-The 3DS interface is represented as two full-TV views. The initial **Control**
-view ports the original upper-screen tracker layout: black-on-white custom 5x7
-font, two parameter columns, section rules, an inverted selected value, audio
-status, and stereo meters. The **Waveform** view ports the lower screen: a
-black performance surface with a full 320-column white waveform, solid
-playhead, dashed grain-range boundaries, and cuts at actual grain launches.
+The 3DS interface is represented as two full-TV views. The initial
+**Waveform** view is a black performance surface with a full 320-column white
+waveform, solid playhead, dashed grain-range boundaries, and cuts at actual
+grain launches. It shows `KIOSK MODE` while the idle automation remains armed.
 Short edge ticks show the prominent transients found during sample loading.
 X and Y jump the playhead to exact transient sample positions, wrapping at the
-ends; a sample with no detected transients does not move.
+ends; a sample with no detected transients does not move. The **Control** view
+ports the original upper-screen tracker layout: black-on-white custom 5x7 font,
+two parameter columns, section rules, an inverted selected value, audio status,
+and stereo meters.
 
 Both pages use a 320x240 logical canvas expanded exactly 2x to the GameCube
 framebuffer. Framebuffer updates are performed as aligned YUYV pixel pairs so

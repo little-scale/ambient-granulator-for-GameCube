@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.15 — 2026-07-31
+
+- Add a hands-off Kiosk mode that rotates textures at randomized 30–60 second
+  intervals until any controller activity is recognized.
+- Randomize the kiosk sample and pitch, thaw the reverb before each grain
+  burst, and refreeze it after the configured grains have launched.
+- Start in Waveform view and show `KIOSK MODE` while the automation is active.
+
 ## 0.14 — 2026-07-31
 
 - Select a random sample at boot, launch the configured grain burst

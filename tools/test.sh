@@ -38,6 +38,12 @@ cc "${common[@]}" \
 "$test_dir/edit_repeat_test"
 
 cc "${common[@]}" \
+    "$project_dir/source/kiosk_mode.c" \
+    "$project_dir/tests/kiosk_mode_test.c" \
+    -o "$test_dir/kiosk_mode_test"
+"$test_dir/kiosk_mode_test"
+
+cc "${common[@]}" \
     "$project_dir/source/sample_bank.c" \
     "$project_dir/source/transient_analysis.c" \
     "$project_dir/tests/transient_analysis_test.c" \
